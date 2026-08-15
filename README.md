@@ -62,3 +62,9 @@ capstone-flask/
 └── .gitignore
 ```
 
+## 🔥 Kiểm chứng persistence (2026-08-15)
+
+Đây là commit trigger để **redeploy**. Nếu Alice & Binh vẫn còn trong database
+sau lần redeploy này → PostgreSQL đã chứng minh dữ liệu **không mất khi redeploy**.
+
+
