@@ -1,7 +1,7 @@
-# 🚀 Capstone Flask — project mẫu cho vibe coding
+# 🚀 Capstone Flask — project mẫu cho vibe coding (SQLite)
 
-Project nhỏ dành cho **Tuần 6** trong kế hoạch vibe coding, hoặc để luyện tập
-ngay từ **Tuần 1–2**. Được tạo sẵn để bạn thấy một dự án hoàn chỉnh trông thế nào.
+Project nhỏ dành cho **Tuần 6** trong kế hoạch vibe coding, nay đã nâng cấp lên
+**SQLite** (database thật) và sẵn sàng **deploy lên cloud**.
 
 ## Cài đặt & chạy
 
@@ -14,7 +14,7 @@ python app.py                      # chạy server -> http://localhost:5000
 ## Test
 
 ```powershell
-python -m pytest -v                # chạy tất cả test
+python -m pytest -v                # 6 test xanh
 ```
 
 ## Các endpoint
@@ -22,26 +22,32 @@ python -m pytest -v                # chạy tất cả test
 | Method | Đường dẫn | Kết quả |
 |---|---|---|
 | GET | `/` | Trang chủ dạng text |
-| GET | `/api/hello` | `{"message": "hello", "visits": n}` — mỗi lần gọi tăng biến đếm |
-| GET | `/api/users` | Danh sách users đã tạo (trong bộ nhớ) |
-| POST | `/api/users` | Body `{"name": "Alice"}` → `201` kèm user; thiếu `name` → `400` |
+| GET | `/api/hello` | `{"message": "hello", "visits": n}` — bộ đếm |
+| GET | `/api/users` | Danh sách users **từ SQLite** |
+| POST | `/api/users` | Body `{"name": "Alice"}` → `201`; thiếu `name` → `400` |
+| DELETE | `/api/users/<id>` | Xóa user → `200`; không có → `404` |
 
-## Thử bằng curl (terminal khác)
+## SQLite — điều gì đã đổi?
 
-```powershell
-curl http://localhost:5000/api/hello
-curl -X POST http://localhost:5000/api/users -H "Content-Type: application/json" -d '{"name":"Alice"}'
-curl http://localhost:5000/api/users
+- Trước: danh sách `users` nằm **trong bộ nhớ** → restart server là mất hết.
+- Bây giờ: dữ liệu nằm trong file **`capstone.db`** → **restart vẫn còn**.
+- File `db.py` = tầng database: `init_db()`, `list_users()`, `create_user()`, `delete_user()`.
+- Dùng module `sqlite3` có sẵn trong Python — **không cần cài thêm gì**.
+
+## Deploy lên cloud ☁️
+
+Xem hướng dẫn đầy đủ trong **`DEPLOY.md`** — nhanh nhất là Render free tier:
+`gunicorn app:app` (đã có sẵn trong `Procfile`).
+
+## Cấu trúc dự án
 ```
-
-## Bài tập vibe coding trên project này
-
-1. Nhờ Cline **thêm endpoint** `DELETE /api/users/<id>` (đừng để AI tự ý xóa data khác).
-2. Nhờ Cline **viết test** cho endpoint mới, chạy `pytest` xác minh.
-3. Commit từng bước vào git.
-
-## File trong project
-- `AGENTS.md` — quy ước dành cho AI (mẫu để bạn học viết)
-- `app.py` — ứng dụng chính
-- `test_app.py` — pytest tests
-- `requirements.txt` — thư viện
+capstone-flask/
+├── AGENTS.md       # quy ước cho AI
+├── app.py          # ứng dụng Flask
+├── db.py           # tầng database SQLite (mới!)
+├── test_app.py     # pytest (mỗi test 1 DB tạm riêng)
+├── Procfile        # cho cloud: gunicorn app:app
+├── requirements.txt
+├── DEPLOY.md       # hướng dẫn deploy (mới!)
+└── .gitignore
+```

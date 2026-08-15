@@ -1,11 +1,14 @@
 import pytest
-from app import app, users
+import db
+from app import app
 
 
 @pytest.fixture
-def client():
+def client(tmp_path):
+    """Moi test dung 1 file DB SQLite rieng (tmp_path) -> cach ly hoan toan."""
+    db.DB_PATH = str(tmp_path / "test.db")
+    db.init_db()
     app.config["TESTING"] = True
-    users.clear()  # reset dữ liệu giữa các test (tránh rò rỉ state)
     with app.test_client() as c:
         yield c
 
@@ -48,3 +51,4 @@ def test_delete_user_not_found(client):
     r = client.delete("/api/users/999")
     assert r.status_code == 404
     assert "error" in r.get_json()
+

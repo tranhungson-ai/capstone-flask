@@ -5,6 +5,10 @@ __pycache__/
 .venv/
 venv/
 
+# Database
+*.db
+instance/
+
 # Env & secrets
 .env
 *.log
