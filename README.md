@@ -30,6 +30,7 @@ python -m pytest -v                # 6 test xanh
 | GET | `/api/hello` | `{"message": "hello", "visits": n}` — bộ đếm |
 | GET | `/api/users` | Danh sách users từ **PostgreSQL** |
 | POST | `/api/users` | Body `{"name": "Alice"}` → `201`; thiếu `name` → `400` |
+| PUT | `/api/users/<id>` | Body `{"name": "Alice Tran"}` → `200`; thiếu `name` → `400`; không có → `404` |
 | DELETE | `/api/users/<id>` | Xóa user → `200`; không có → `404` |
 
 ## Tại sao PostgreSQL (thay vì SQLite)?
