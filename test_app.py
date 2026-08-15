@@ -1,13 +1,26 @@
+import os
+
 import pytest
+
 import db
 from app import app
 
+# DB test rieng (can PostgreSQL dang chay local):
+#   $env:TEST_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/capstone_test"
+TEST_DATABASE_URL = os.environ.get(
+    "TEST_DATABASE_URL",
+    "postgresql://postgres:postgres@localhost:5432/capstone_test",
+)
+
 
 @pytest.fixture
-def client(tmp_path):
-    """Moi test dung 1 file DB SQLite rieng (tmp_path) -> cach ly hoan toan."""
-    db.DB_PATH = str(tmp_path / "test.db")
+def client():
+    """Moi test dung DB test rieng va lam sach bang users truoc khi chay."""
+    db.DATABASE_URL = TEST_DATABASE_URL
     db.init_db()
+    with db.get_connection() as conn, conn.cursor() as cur:
+        cur.execute("TRUNCATE users RESTART IDENTITY")
+        conn.commit()
     app.config["TESTING"] = True
     with app.test_client() as c:
         yield c
@@ -51,4 +64,5 @@ def test_delete_user_not_found(client):
     r = client.delete("/api/users/999")
     assert r.status_code == 404
     assert "error" in r.get_json()
+
 

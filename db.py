@@ -1,29 +1,40 @@
-"""db.py — lop du lieu SQLite cho capstone Flask.
+"""db.py — lop du lieu PostgreSQL cho capstone Flask.
 
-Dung module sqlite3 co san trong Python (khong can cai them gi).
-File database: capstone.db (tu dong tao lan dau chay).
+Ket noi qua bien moi truong DATABASE_URL.
+- Tren Render: render.yaml (database blueprint) tu dong set bien nay.
+- Chay local: set DATABASE_URL truoc khi chay, VD:
+      $env:DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/capstone"
+
+Khac biet voi SQLite:
+- Placeholder la %s (khong phai ?)
+- id tu dong tang bang SERIAL
+- Insert tra id qua RETURNING
 """
 
-import sqlite3
+import os
 from contextlib import closing
 
-DB_PATH = "capstone.db"
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql://postgres:postgres@localhost:5432/capstone",
+)
 
 
 def get_connection():
-    """Mo ket noi SQLite. row_factory = truy cap cot theo ten."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Mo ket noi PostgreSQL (truy cap cot theo ten qua RealDictCursor)."""
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
 
 def init_db():
     """Tao bang users neu chua co (goi 1 lan luc khoi dong)."""
-    with closing(get_connection()) as conn:
-        conn.execute(
+    with closing(get_connection()) as conn, conn.cursor() as cur:
+        cur.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 name TEXT NOT NULL
             )
             """
@@ -33,22 +44,26 @@ def init_db():
 
 def list_users():
     """Tra ve danh sach users tu database."""
-    with closing(get_connection()) as conn:
-        rows = conn.execute("SELECT id, name FROM users ORDER BY id").fetchall()
-    return [{"id": r["id"], "name": r["name"]} for r in rows]
+    with closing(get_connection()) as conn, conn.cursor() as cur:
+        cur.execute("SELECT id, name FROM users ORDER BY id")
+        rows = cur.fetchall()
+    return [dict(r) for r in rows]
 
 
 def create_user(name):
     """Them user moi, tra ve id vua tao."""
-    with closing(get_connection()) as conn:
-        cur = conn.execute("INSERT INTO users (name) VALUES (?)", (name,))
+    with closing(get_connection()) as conn, conn.cursor() as cur:
+        cur.execute("INSERT INTO users (name) VALUES (%s) RETURNING id", (name,))
+        user_id = cur.fetchone()["id"]
         conn.commit()
-        return cur.lastrowid
+        return user_id
 
 
 def delete_user(user_id):
     """Xoa user theo id. Tra ve so dong da xoa (0 = khong tim thay)."""
-    with closing(get_connection()) as conn:
-        cur = conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    with closing(get_connection()) as conn, conn.cursor() as cur:
+        cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        deleted = cur.rowcount
         conn.commit()
-        return cur.rowcount
+        return deleted
+

@@ -13,7 +13,13 @@ from flask import Flask, jsonify, request
 import db
 
 app = Flask(__name__)
-db.init_db()  # tao bang users (neu chua co)
+
+# Tao bang users (neu chua co). Neu DATABASE_URL chua san (VD: moi push,
+# chua Apply blueprint), chi canh bao, KHONG crash de app van khoi dong.
+try:
+    db.init_db()
+except Exception as exc:
+    print(f"WARNING: khong the khoi tao database: {exc}")
 
 visit_count = 0
 

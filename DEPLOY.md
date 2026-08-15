@@ -1,56 +1,64 @@
-# ☁️ Deploy Capstone Flask lên Cloud
+# ☁️ Deploy Capstone Flask + PostgreSQL lên Render
 
-> Project đã sẵn sàng deploy: có `Procfile`, `requirements.txt` (kèm gunicorn), git repo sạch.
+> Project đã sẵn sàng: `render.yaml` khai báo cả **web service** lẫn **PostgreSQL**.
+> Khi bạn Apply Blueprint, Render tự tạo database và nối `DATABASE_URL` vào app.
 
-## Cách nhanh nhất: Render (miễn phí) 🚀
+## Bước 1 — Đẩy code mới lên GitHub
 
-### Bước 1 — Đẩy code lên GitHub
-1. Tạo repo công khai trên GitHub (không cần README).
-2. Trong terminal, tại thư mục `capstone-flask`:
-   ```bash
-   git remote add origin https://github.com/<ten-ban>/capstone-flask.git
-   git push -u origin master
-   ```
+```bash
+git add -A
+git commit -m "Chuyen sang PostgreSQL"
+git push origin master
+```
 
-### Bước 2 — Tạo Web Service trên Render
-1. Vào https://render.com → **Sign up** (Google/GitHub) → **New +** → **Web Service**
-2. **Connect** repo GitHub `capstone-flask` (lần đầu cần cấp quyền cho Render)
-3. Render tự nhận `Procfile` và điền sẵn các cấu hình. Kiểm tra:
-   | Trường | Giá trị |
-   |---|---|
-   | **Build Command** | `pip install -r requirements.txt` |
-   | **Start Command** | `gunicorn app:app` |
-   | **Python version** | chọn bản gần nhất có sẵn |
-4. Bấm **Create Web Service** → chờ ~3 phút build
-5. Xong! Nhận URL dạng `https://capstone-flask-xxxx.onrender.com`
+## Bước 2 — Apply Blueprint trên Render
 
-### Bước 3 — Kiểm tra
+1. Vào https://dashboard.render.com
+2. Vào repo/blueprint của bạn (service đang chạy `capstone-flask-sg9i`)
+3. Render phát hiện `render.yaml` có thay đổi → bấm **Apply** (hoặc **Sync Blueprint**)
+4. Render sẽ tạo thêm:
+   - 🗄️ **PostgreSQL** `capstone-postgres` (free)
+   - Đặt biến `DATABASE_URL` cho web service (tự động)
+5. Chờ deploy mới hoàn tất (~3–5 phút)
+
+## Bước 3 — Kiểm tra
+
 ```powershell
-curl https://capstone-flask-xxxx.onrender.com/api/users
-curl -X POST https://capstone-flask-xxxx.onrender.com/api/users -H "Content-Type: application/json" -d '{"name":"Alice"}'
+curl https://capstone-flask-sg9i.onrender.com/api/users
+curl -X POST https://capstone-flask-sg9i.onrender.com/api/users -H "Content-Type: application/json" -d '{"name":"Alice"}'
+curl https://capstone-flask-sg9i.onrender.com/api/users
 ```
+
+## Bước 4 — Chứng minh dữ liệu không mất khi redeploy 🔥
+
+1. POST vài user (Alice, Binh)
+2. Vào Render → bấm **Manual Deploy → Deploy latest commit** (hoặc push 1 commit mới)
+3. Sau khi deploy xong, gọi lại `GET /api/users`
+4. **Alice và Binh vẫn còn** → PostgreSQL hoạt động đúng!
 
 ---
 
-## Các nền tảng khác
+## Cấu trúc `render.yaml` (giải thích)
 
-| Nền tảng | Ưu điểm | Ghi chú |
-|---|---|---|
-| **Railway** | Đơn giản, auto-deploy từ GitHub | railway.app |
-| **PythonAnywhere** | Dễ dùng, có panel web | pythonanywhere.com (cần tạo web app + WSGI `app:app`) |
-| **HuggingFace Spaces** | Miễn phí, tốt cho demo | hf.co → Space type: **Docker** |
-| **Fly.io / AWS / GCP** | Mạnh, chuyên nghiệp | nâng cao hơn, tốn thời gian học |
+```yaml
+databases:                      # khai báo database
+  - name: capstone-postgres
+    plan: free
+    databaseName: capstone
 
----
-
-## ⚠️ Lưu ý quan trọng về SQLite trên cloud
-
-- **SQLite là file** (`capstone.db`) nằm trong thư mục server. Trên Render free tier, thư mục này **bị reset mỗi khi deploy lại** → dữ liệu có thể mất.
-- **Phù hợp:** demo, học tập, app cá nhân ít người dùng.
-- **Khi làm sản phẩm thật:** chuyển sang **PostgreSQL** (Render có free Postgres) — cấu trúc code gần như giữ nguyên, chỉ đổi tầng `db.py`.
-
-## 🧠 Tóm tắt quy trình deploy
+services:
+  - type: web
+    ...
+    envVarGroups:               # nối DATABASE_URL từ database vừa tạo
+      - key: DATABASE_URL
+        fromDatabase:
+          name: capstone-postgres
+          property: connectionString
 ```
-pip install -r requirements.txt (build)  →  gunicorn app:app (start)  →  https URL
-```
-Chỉ 2 lệnh — đó là lý do `Procfile` + `requirements.txt` tồn tại.
+
+## Lưu ý
+
+- Render Postgres free tier có hạn mức nhỏ (1GB) — đủ cho học tập/demo.
+- Nếu deploy cũ (SQLite) vẫn còn, bấm **Deploy** mới để áp dụng thay đổi.
+- Mật khẩu database nằm trong `DATABASE_URL` do Render quản lý — **đừng để lộ**.
+
