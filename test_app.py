@@ -1,10 +1,11 @@
 import pytest
-from app import app
+from app import app, users
 
 
 @pytest.fixture
 def client():
     app.config["TESTING"] = True
+    users.clear()  # reset dữ liệu giữa các test (tránh rò rỉ state)
     with app.test_client() as c:
         yield c
 
@@ -34,3 +35,16 @@ def test_create_user_missing_name(client):
 def test_create_user_invalid_json(client):
     r = client.post("/api/users", data="not json", content_type="application/json")
     assert r.status_code == 400
+
+
+def test_delete_user_ok(client):
+    client.post("/api/users", json={"name": "Alice"})
+    r = client.delete("/api/users/1")
+    assert r.status_code == 200
+    assert client.get("/api/users").get_json() == []
+
+
+def test_delete_user_not_found(client):
+    r = client.delete("/api/users/999")
+    assert r.status_code == 404
+    assert "error" in r.get_json()
