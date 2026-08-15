@@ -1,0 +1,9 @@
+# render.yaml — Render Blueprint: Render tự đọc file này khi bạn kết nối repo
+services:
+  - type: web
+    name: capstone-flask
+    runtime: python
+    plan: free                 # gói miễn phí, không cần thẻ
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app"
+    autoDeploy: true           # tự deploy lại khi bạn push commit mới
