@@ -53,6 +53,26 @@ def test_create_user_invalid_json(client):
     assert r.status_code == 400
 
 
+def test_update_user_ok(client):
+    client.post("/api/users", json={"name": "Alice"})
+    r = client.put("/api/users/1", json={"name": "Alice Tran"})
+    assert r.status_code == 200
+    data = r.get_json()
+    assert data["name"] == "Alice Tran"
+
+
+def test_update_user_missing_name(client):
+    client.post("/api/users", json={"name": "Alice"})
+    r = client.put("/api/users/1", json={})
+    assert r.status_code == 400
+
+
+def test_update_user_not_found(client):
+    r = client.put("/api/users/999", json={"name": "X"})
+    assert r.status_code == 404
+    assert "error" in r.get_json()
+
+
 def test_delete_user_ok(client):
     client.post("/api/users", json={"name": "Alice"})
     r = client.delete("/api/users/1")

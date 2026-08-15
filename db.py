@@ -59,6 +59,18 @@ def create_user(name):
         return user_id
 
 
+def update_user(user_id, name):
+    """Cap nhat ten user. Tra ve dict user neu tim thay, else None."""
+    with closing(get_connection()) as conn, conn.cursor() as cur:
+        cur.execute(
+            "UPDATE users SET name = %s WHERE id = %s RETURNING id, name",
+            (name, user_id),
+        )
+        row = cur.fetchone()
+        conn.commit()
+    return dict(row) if row else None
+
+
 def delete_user(user_id):
     """Xoa user theo id. Tra ve so dong da xoa (0 = khong tim thay)."""
     with closing(get_connection()) as conn, conn.cursor() as cur:

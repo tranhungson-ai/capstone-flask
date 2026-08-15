@@ -1,10 +1,11 @@
-"""Capstone Flask API - demo project for vibe coding (SQLite).
+"""Capstone Flask API - demo project for vibe coding (PostgreSQL).
 
 Endpoints:
     GET  /                  -> text homepage
     GET  /api/hello         -> JSON {"message": "hello", "visits": n} + visitor counter
-    GET  /api/users         -> list of users (from SQLite)
+    GET  /api/users         -> list of users (from PostgreSQL)
     POST /api/users         -> create user {"name": "..."} -> 201 or 400
+    PUT  /api/users/<id>    -> update user name -> 200 or 400 or 404
     DELETE /api/users/<id>  -> delete user by id -> 200 or 404
 """
 
@@ -48,6 +49,18 @@ def create_user():
         return jsonify({"error": "Missing 'name' field"}), 400
     user_id = db.create_user(data["name"])
     return jsonify({"id": user_id, "name": data["name"]}), 201
+
+
+@app.route("/api/users/<int:user_id>", methods=["PUT"])
+def update_user(user_id):
+    """Cap nhat ten user. PUT /api/users/<id> voi body {"name": "..."}."""
+    data = request.get_json(silent=True)
+    if not data or not data.get("name"):
+        return jsonify({"error": "Missing 'name' field"}), 400
+    user = db.update_user(user_id, data["name"])
+    if user is None:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify(user), 200
 
 
 @app.route("/api/users/<int:user_id>", methods=["DELETE"])
